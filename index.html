@@ -2,59 +2,153 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Interactive Earth with Pins</title>
+<title>Interactive Earth with GIS Polygons</title>
 
 <style>
-body{
-    margin:0;
-    overflow:hidden;
-    background:black;
+/* ===== ページ全体の設定 ===== */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* 余計なスクロールバーを消す */
+    background: black;
 }
 
-/* 吹き出し */
-#popup{
-
-    position:absolute;
-
-    min-width:220px;
-
-    padding:12px;
-
-    background:rgba(0,0,0,0.85);
-
-    color:white;
-
-    border-radius:0px;
-
-    border:1px solid #00e5ff;
-
-    font-family:sans-serif;
-
-    display:none;
-
-    z-index:1000;
-
-    box-shadow:0 0 20px rgba(0,229,255,0.5);
-
-    backdrop-filter:blur(4px);
+/* ===== 左上固定の情報パネル ===== */
+#info-panel {
+    position: absolute; /* マップの上に重ねる */
+    top: 20px;
+    left: 20px;
+    width: 320px;
+    background: rgba(10, 20, 30, 0.75); /* 半透明のダークネイビー */
+    color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 229, 255, 0.4); /* うっすらネオンブルーの枠線 */
+    font-family: sans-serif;
+    z-index: 2000; /* マップより必ず手前に表示 */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px); /* 背景の地球をボカして透過 */
+    pointer-events: auto; /* パネル上のクリックを有効に */
 }
 
-/* タイトル */
-#popup h3{
-    margin:0 0 8px 0;
-    color:#00e5ff;
+#info-panel h2 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+    color: #00e5ff;
 }
 
-/* 本文 */
-#popup p{
-    margin:0;
-    line-height:1.5;
+#info-panel .subtitle {
+    margin: 0 0 10px 0;
+    font-size: 11px;
+    color: #88a0a8;
+}
+
+#info-panel hr {
+    border: 0;
+    border-top: 1px solid rgba(0, 229, 255, 0.2);
+    margin: 10px 0;
+}
+
+#info-panel .description {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+    margin-bottom: 15px;
+}
+
+/* ===== 凡例のデザイン ===== */
+.legend-section h3 {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+    color: #00e5ff;
+}
+
+.legend-item {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    color: #ddd;
+}
+
+.color-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 10px;
+    border-radius: 2px;
+}
+/* ポリゴンの色に合わせた凡例のカラーボックス */
+.color-box.totality { background-color: rgba(170, 17, 85, 0.85); border: 1px solid #aa1155; }
+.color-box.partial { background-color: rgba(255, 170, 102, 0.85); border: 1px solid #ffaa66; }
+.color-box.wide { background-color: rgba(85, 153, 255, 0.85); border: 1px solid #5599ff; }
+
+/* ===== ピンをクリックした時の吹き出し ===== */
+#popup {
+    position: absolute;
+    min-width: 220px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border: 1px solid #00e5ff;
+    border-radius: 4px;
+    font-family: sans-serif;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+}
+
+#popup h3 {
+    margin: 0 0 8px 0;
+    color: #00e5ff;
+}
+
+#popup p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ===== ピンの常時表示ラベル ===== */
+.map-label {
+    position: absolute;
+    color: #00e5ff;
+    font-family: sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border: 1px solid #00e5ff;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, -140%); /* ピンの真上に浮かせる */
+    z-index: 100;
 }
 </style>
 </head>
 
 <body>
 
+    <div id="info-panel">
+        <h2>2034年 皆既日食観測マップ</h2>
+        <p class="subtitle">GIS 3D Visualization Project</p>
+        <hr>
+        <div class="description">
+            <p>このインタラクティブ地球儀は、2034年に発生する皆既日食の影の移動経路と、可視領域を3Dポリゴンで視覚化したものです。</p>
+        </div>
+        
+        <div class="legend-section">
+            <h3>【 日食帯の凡例 】</h3>
+            <div class="legend-item"><span class="color-box totality"></span>皆既日食帯 (中心部)</div>
+            <div class="legend-item"><span class="color-box partial"></span>部分日食帯 (中間部)</div>
+            <div class="legend-item"><span class="color-box wide"></span>広域可視帯 (外縁部)</div>
+        </div>
+    </div>
+
+    <div id="labels-container"></div>
     <div id="popup"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -63,14 +157,12 @@ body{
 <script>
 
 const scene = new THREE.Scene();
-
 const raycaster = new THREE.Raycaster();
-
 const mouse = new THREE.Vector2();
-
 const clickablePins = [];
-
 const popup = document.getElementById("popup");
+const labelsContainer = document.getElementById("labels-container");
+const labelElements = []; // 【復活】常時表示ラベル管理用
 
 const camera = new THREE.PerspectiveCamera(
     75,
@@ -78,15 +170,12 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 );
-
 camera.position.z = 2;
 
 const renderer = new THREE.WebGLRenderer({
     antialias:true
 });
-
 renderer.setSize(window.innerWidth, window.innerHeight);
-
 document.body.appendChild(renderer.domElement);
 
 // コントロール
@@ -94,69 +183,49 @@ const controls = new THREE.OrbitControls(
     camera,
     renderer.domElement
 );
-
 controls.enableDamping = true;
 
 // ======================
-// 地球
+// 地球の読み込み
 // ======================
-
 const loader = new THREE.TextureLoader();
-
 let earth;
-
 let eclipseShadow;
 
 loader.load(
     'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
-
     function(texture){
-
         const geometry = new THREE.SphereGeometry(0.7, 64, 64);
-
         const material = new THREE.MeshBasicMaterial({
             map:texture
         });
-
         earth = new THREE.Mesh(geometry, material);
-
         scene.add(earth);
 
         // ======================
-// 月の影
-// ======================
+        // 月の影
+        // ======================
+        const shadowGeometry = new THREE.SphereGeometry(0.08, 32, 32);
+        const shadowMaterial = new THREE.MeshBasicMaterial({
+            color:0x000000,
+            transparent:true,
+            opacity:0.45
+        });
+        eclipseShadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+        scene.add(eclipseShadow);
 
-const shadowGeometry =
-    new THREE.SphereGeometry(0.08, 32, 32);
-
-const shadowMaterial =
-    new THREE.MeshBasicMaterial({
-        color:0x000000,
-        transparent:true,
-        opacity:0.45
-    });
-
-eclipseShadow =
-    new THREE.Mesh(
-        shadowGeometry,
-        shadowMaterial
-    );
-
-scene.add(eclipseShadow);
-
-        // ピン追加（地球のあと）
+        // ピン追加とGISポリゴンの追加
         addPins();
+        setupDetailedEclipsePolygons();
 
         animate();
     }
 );
 
 // ======================
-// ピン変換関数
+// 緯度経度変換関数
 // ======================
-
 function latLonToVector3(lat, lon, radius){
-
     const phi = (90 - lat) * (Math.PI / 180);
     const theta = (lon + 180) * (Math.PI / 180);
 
@@ -167,274 +236,204 @@ function latLonToVector3(lat, lon, radius){
     return new THREE.Vector3(x, y, z);
 }
 
-function createArc(points, color=0xff6666){
+// ==========================================
+// GIS風 多層日食ポリゴン生成関数
+// ==========================================
+function setupDetailedEclipsePolygons() {
+    const totalityNorth = [
+        {lat:2, lon:-38}, {lat:8, lon:-20}, {lat:12, lon:0}, {lat:16, lon:15}, {lat:20, lon:30},
+        {lat:26, lon:45}, {lat:31, lon:60}, {lat:34, lon:75}, {lat:36, lon:90}, {lat:38, lon:105}
+    ];
+    const totalitySouth = [
+        {lat:-4, lon:-38}, {lat:1, lon:-20}, {lat:5, lon:0}, {lat:9, lon:15}, {lat:13, lon:30},
+        {lat:18, lon:45}, {lat:23, lon:60}, {lat:27, lon:75}, {lat:29, lon:90}, {lat:31, lon:105}
+    ];
 
-    const vectors = [];
+    const partialNorth = totalityNorth.map(p => ({ lat: p.lat + 10, lon: p.lon }));
+    const partialSouth = totalitySouth.map(p => ({ lat: p.lat - 10, lon: p.lon }));
 
-    points.forEach(p => {
+    const wideNorth = partialNorth.map(p => ({ lat: p.lat + 15, lon: p.lon }));
+    const wideSouth = partialSouth.map(p => ({ lat: p.lat - 15, lon: p.lon }));
 
-        vectors.push(
-            latLonToVector3(
-                p.lat,
-                p.lon,
-                0.75
-            )
-        );
-    });
+    function createPolygonMesh(northPath, southPath, color, opacity, heightOffset) {
+        const vertices = [];
+        const count = Math.min(northPath.length, southPath.length);
+        const radius = 0.7 + heightOffset;
 
-    const geometry =
-        new THREE.BufferGeometry().setFromPoints(vectors);
+        for (let i = 0; i < count - 1; i++) {
+            const nCurr = latLonToVector3(northPath[i].lat, northPath[i].lon, radius);
+            const nNext = latLonToVector3(northPath[i+1].lat, northPath[i+1].lon, radius);
+            const sCurr = latLonToVector3(southPath[i].lat, southPath[i].lon, radius);
+            const sNext = latLonToVector3(southPath[i+1].lat, southPath[i+1].lon, radius);
 
-    const material =
-        new THREE.LineBasicMaterial({
-            color:color
+            vertices.push(nCurr.x, nCurr.y, nCurr.z);
+            vertices.push(sCurr.x, sCurr.y, sCurr.z);
+            vertices.push(nNext.x, nNext.y, nNext.z);
+            vertices.push(sCurr.x, sCurr.y, sCurr.z);
+            vertices.push(sNext.x, sNext.y, sNext.z);
+            vertices.push(nNext.x, nNext.y, nNext.z);
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+
+        const material = new THREE.MeshBasicMaterial({
+            color: color,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: opacity,
+            depthWrite: false
         });
 
-    const line =
-        new THREE.Line(geometry, material);
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+    }
 
-    scene.add(line);
+    createPolygonMesh(wideNorth, wideSouth, 0x5599ff, 0.25, 0.09);    
+    createPolygonMesh(partialNorth, partialSouth, 0xffaa66, 0.4, 0.05); 
+    createPolygonMesh(totalityNorth, totalitySouth, 0xaa1155, 0.55, 0.05); 
 }
 
 // ======================
 // ピンデータ
 // ======================
-
 const pins = [
-
-{
-    name:"2034 皆既日食",
-    lat:33,
-    lon:90,
-    description:"中国付近で皆既日食"
-},
-
-{
-    name:"2034 皆既日食",
-    lat:-1,
-    lon:-38,
-    description:"ブラジルの開始地点"
-}
-
+    {
+        name:"中国終了地点",
+        lat:33,
+        lon:90,
+        description:"中国付近で皆既日食"
+    },
+    {
+        name:"ブラジル開始地点",
+        lat:-1,
+        lon:-38,
+        description:"日食の開始地点"
+    }
 ];
 
 const eclipsePath = [
-
-    {lat:-1, lon:-38},
-    {lat:5, lon:-20},
-    {lat:9, lon:0},
-    {lat:13, lon:15},
-    {lat:17, lon:30},
-    {lat:23, lon:45},
-    {lat:28, lon:60},
-    {lat:31, lon:75},
-    {lat:33, lon:90},
-    {lat:35, lon:105}
-
+    {lat:-1, lon:-38}, {lat:5, lon:-20}, {lat:9, lon:0}, {lat:13, lon:15}, {lat:17, lon:30},
+    {lat:23, lon:45}, {lat:28, lon:60}, {lat:31, lon:75}, {lat:33, lon:90}, {lat:35, lon:105}
 ];
-// ======================
-// ピン追加
-// ======================
 
+// ======================
+// ピン追加とHTMLラベル連動
+// ======================
 function addPins(){
-
-
     pins.forEach(p => {
-
-        const pinGeometry =
-            new THREE.SphereGeometry(0.02, 16, 16);
-
-        const pinMaterial =
-            new THREE.MeshBasicMaterial({
-                color:0x00e5ff
-            });
-
-        const pin =
-            new THREE.Mesh(pinGeometry, pinMaterial);
-
-        const pos =
-            latLonToVector3(
-                p.lat,
-                p.lon,
-                0.72 // 地球より少し外
-            );
-
+        const pinGeometry = new THREE.SphereGeometry(0.02, 16, 16);
+        const pinMaterial = new THREE.MeshBasicMaterial({ color:0x00e5ff });
+        const pin = new THREE.Mesh(pinGeometry, pinMaterial);
+        
+        const pos = latLonToVector3(p.lat, p.lon, 0.72);
         pin.position.copy(pos);
 
         scene.add(pin);
-pin.userData = p;
+        pin.userData = p;
+        clickablePins.push(pin);
 
-clickablePins.push(pin);
+        // 【復活】ピンに追従するHTMLラベルを生成
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'map-label';
+        labelDiv.textContent = p.name;
+        labelsContainer.appendChild(labelDiv);
+        
+        labelElements.push({
+            element: labelDiv,
+            pos: pos.clone()
+        });
 
-        // ラベル代わりの線
-        const lineGeometry =
-            new THREE.BufferGeometry().setFromPoints([
-                pos,
-                pos.clone().multiplyScalar(1.1)
-            ]);
-
-        const lineMaterial =
-            new THREE.LineBasicMaterial({
-                color:0x00e5ff
-            });
-
-        const line =
-            new THREE.Line(lineGeometry, lineMaterial);
-
+        // ラベル代わりの引き出し線
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+            pos,
+            pos.clone().multiplyScalar(1.1)
+        ]);
+        const lineMaterial = new THREE.LineBasicMaterial({ color:0x00e5ff });
+        const line = new THREE.Line(lineGeometry, lineMaterial);
         scene.add(line);
     });
 }
 
-
-createArc([
-
-    {lat:-1, lon:-38},   // ブラジル沖
-    {lat:5, lon:-20},    // 大西洋
-    {lat:9, lon:0},      // 西アフリカ
-    {lat:13, lon:15},    // ナイジェリア
-    {lat:17, lon:30},    // スーダン
-    {lat:23, lon:45},    // サウジ
-    {lat:28, lon:60},    // イラン
-    {lat:31, lon:75},    // パキスタン
-    {lat:33, lon:90},    // インド北部
-    {lat:35, lon:105}    // 中国
-
-], 0xff5533);
-
-createArc([
-
-    {lat:2, lon:-38},
-    {lat:8, lon:-20},
-    {lat:12, lon:0},
-    {lat:16, lon:15},
-    {lat:20, lon:30},
-    {lat:26, lon:45},
-    {lat:31, lon:60},
-    {lat:34, lon:75},
-    {lat:36, lon:90},
-    {lat:38, lon:105}
-
-], 0xffaaaa);
-
-createArc([
-
-    {lat:-4, lon:-38},
-    {lat:1, lon:-20},
-    {lat:5, lon:0},
-    {lat:9, lon:15},
-    {lat:13, lon:30},
-    {lat:18, lon:45},
-    {lat:23, lon:60},
-    {lat:27, lon:75},
-    {lat:29, lon:90},
-    {lat:31, lon:105}
-
-], 0xffaaaa);
-
+// ======================
+// クリックイベント
+// ======================
 window.addEventListener('click', (event)=>{
-
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-
-    const intersects =
-        raycaster.intersectObjects(clickablePins);
+    const intersects = raycaster.intersectObjects(clickablePins);
 
     if(intersects.length > 0){
-
         const pin = intersects[0].object;
-
-       popup.style.display = "block";
-
-popup.style.left = event.clientX + 15 + "px";
-
-popup.style.top = event.clientY + 15 + "px";
-
-popup.innerHTML = `
-    <h3>${pin.userData.name}</h3>
-    <p>${pin.userData.description}</p>
-`;
+        popup.style.display = "block";
+        popup.style.left = event.clientX + 15 + "px";
+        popup.style.top = event.clientY + 15 + "px";
+        popup.innerHTML = `
+            <h3>${pin.userData.name}</h3>
+            <p>${pin.userData.description}</p>
+        `;
+    } else {
+        popup.style.display = "none";
     }
-
-    else{
-
-    popup.style.display = "none";
-}
 });
 
 // ======================
 // アニメーション
 // ======================
-
 function animate(){
-
     requestAnimationFrame(animate);
-
-   
-
     controls.update();
+
+    // 【復活】ラベルを3D空間のピン位置に連動して追従させる
+    labelElements.forEach(item => {
+        const wp = item.pos.clone();
+        wp.project(camera);
+
+        if (wp.z > 1) {
+            item.element.style.display = 'none';
+            return;
+        } else {
+            item.element.style.display = 'block';
+        }
+
+        const x = (wp.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-(wp.y * 0.5) + 0.5) * window.innerHeight;
+
+        item.element.style.left = `${x}px`;
+        item.element.style.top = `${y}px`;
+    });
 
     renderer.render(scene, camera);
 
     if(eclipseShadow){
+        const time = Date.now() * 0.00008;
+        const index = Math.floor(time % eclipsePath.length);
+        const nextIndex = (index + 1) % eclipsePath.length;
+        const t = time % 1;
 
-    const time =
-        Date.now() * 0.00008;
+        const current = eclipsePath[index];
+        const next = eclipsePath[nextIndex];
 
-    const index =
-        Math.floor(time % eclipsePath.length);
+        const lat = current.lat + (next.lat - current.lat) * t;
+        const lon = current.lon + (next.lon - current.lon) * t;
 
-    const nextIndex =
-        (index + 1) % eclipsePath.length;
-
-    const t =
-        time % 1;
-
-    const current =
-        eclipsePath[index];
-
-    const next =
-        eclipsePath[nextIndex];
-
-    const lat =
-        current.lat +
-        (next.lat - current.lat) * t;
-
-    const lon =
-        current.lon +
-        (next.lon - current.lon) * t;
-
-    const pos =
-        latLonToVector3(
-            lat,
-            lon,
-            0.71
-        );
-
-    eclipseShadow.position.copy(pos);
-}
+        const pos = latLonToVector3(lat, lon, 0.71);
+        eclipseShadow.position.copy(pos);
+    }
 }
 
 // ======================
 // リサイズ
 // ======================
-
 window.addEventListener('resize', ()=>{
-
-    camera.aspect =
-        window.innerWidth / window.innerHeight;
-
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
 </script>
-
 </body>
 </html>

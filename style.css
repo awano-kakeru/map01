@@ -1,40 +1,122 @@
-/* ===== ページ全体の設定 ===== */
-/* html要素とbody要素の余白をリセットし、高さを100%に設定 */
+/* ===== 1. ページ全体の設定 ===== */
 html, body {
-	margin: 0;     /* 外側の余白をゼロに */
-	padding: 0;    /* 内側の余白をゼロに */
-	height: 100%;  /* 高さを画面全体（100%）に */
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* スクロールバーを強制非表示 */
+    background: black;
 }
 
-/* ===== 地図コンテナの設定 ===== */
-/* id="map"の要素（地図を表示する領域）のスタイル */
-#map {
-	width: 100%;   /* 幅を画面全体（100%）に */
-	height: 100vh; /* 高さをビューポートの100%（画面全体）に */
+/* ===== 2. 左上固定の情報パネル ===== */
+#info-panel {
+    position: absolute; /* マップの上に重ねる */
+    top: 20px;
+    left: 20px;
+    width: 320px;
+    background: rgba(10, 20, 30, 0.75); /* 半透明のダークネイビー */
+    color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 229, 255, 0.4); /* うっすらネオンブルーの枠線 */
+    font-family: sans-serif;
+    z-index: 2000; /* マップより必ず手前に表示 */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px); /* 背景の地球をボカして透過 */
+    pointer-events: auto; /* パネル上のクリックを有効に */
 }
 
-#popup{
-    position:absolute;
+#info-panel h2 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+    color: #00e5ff;
+}
 
-    min-width:200px;
+#info-panel .subtitle {
+    margin: 0 0 10px 0;
+    font-size: 11px;
+    color: #88a0a8;
+}
 
-    padding:12px;
+#info-panel hr {
+    border: 0;
+    border-top: 1px solid rgba(0, 229, 255, 0.2);
+    margin: 10px 0;
+}
 
-    background:rgba(0,0,0,0.85);
+#info-panel .description {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+    margin-bottom: 15px;
+}
 
-    color:white;
+/* ===== 3. 凡例（情報パネル内）のデザイン ===== */
+.legend-section h3 {
+    font-size: 13px;
+    margin: 0 0 8px 0;
+    color: #00e5ff;
+}
 
-    border-radius:0px;
+.legend-item {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    color: #ddd;
+}
 
-    border:1px solid #00e5ff;
+.color-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 10px;
+    border-radius: 2px;
+}
+/* ポリゴンの透明度(0.25〜0.55)に合わせて凡例の色も半透明に調整 */
+.color-box.totality { background-color: rgba(170, 17, 85, 0.85); border: 1px solid #aa1155; }
+.color-box.partial { background-color: rgba(255, 170, 102, 0.85); border: 1px solid #ffaa66; }
+.color-box.wide { background-color: rgba(85, 153, 255, 0.85); border: 1px solid #5599ff; }
 
-    font-family:sans-serif;
+/* ===== 4. ピンをクリックした時の吹き出し ===== */
+#popup {
+    position: absolute;
+    min-width: 200px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    border: 1px solid #00e5ff;
+    border-radius: 4px;
+    font-family: sans-serif;
+    pointer-events: none; /* マウスの邪魔をしない */
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+    backdrop-filter: blur(4px);
+}
 
-    pointer-events:none;
+#popup h3 {
+    margin: 0 0 8px 0;
+    color: #00e5ff;
+}
 
-    display:none;
+#popup p {
+    margin: 0;
+    line-height: 1.5;
+}
 
-    box-shadow:0 0 20px rgba(0,229,255,0.5);
-
-    backdrop-filter:blur(4px);
+/* ===== 5. ピンの常時表示ラベル ===== */
+.map-label {
+    position: absolute;
+    color: #00e5ff;
+    font-family: sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border: 1px solid #00e5ff;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, -140%); /* ピンの真上に浮かせる */
+    z-index: 100;
 }
